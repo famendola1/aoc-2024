@@ -51,9 +51,9 @@
         sub   (try (requiring-resolve
                     (symbol (format "advent-of-code.day%02d%s/part-%d"
                                     day (if bis "bis" "") part)))
-                   (catch Exception _
-                     (format "No%s fn found for day %d part %d."
-                             (if bis " bis" "") day part)))]
+                   (catch Exception e
+                     (format "No%s fn found for day %d part %d.: %s"
+                             (if bis " bis" "") day part e)))]
     (cond
       (or (< day 1)
           (> day 25)) (.println *err* "Day out of range.")
