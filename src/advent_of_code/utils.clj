@@ -138,3 +138,7 @@
   "Display a matrix of characters, as if on a terminal or similar"
   [lines]
   (println (str/join "\n" (map #(str/join %) lines))))
+
+;; https://stackoverflow.com/questions/24553524/how-to-drop-the-nth-item-in-a-collection-in-clojure
+(defn drop-nth [n coll]
+  (keep-indexed #(if (not= %1 n) %2) coll))
