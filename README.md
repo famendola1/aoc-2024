@@ -1,6 +1,6 @@
-# advent-20XX-clojure
+# advent-2024-clojure
 
-This is my code for the 20XX [Advent of Code](https://adventofcode.com/20XX),
+This is my code for the 2024 [Advent of Code](https://adventofcode.com/20XX),
 all solutions in [Clojure](https://clojure.org/).
 
 All code is under the `src` directory. Each solution-file is named `dayNN.clj`
