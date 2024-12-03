@@ -1,18 +1,11 @@
 (ns advent-of-code.day03
   (:require [advent-of-code.utils :as u]))
 
-(defn- find-all-matches [matcher]
-  (loop [res ()]
-    (if (.find matcher)
-      (recur (cons (.group matcher) res))
-      (reverse res))))
-
 (defn part-1
   "Day 03 Part 1"
   [input]
   (->> input
-       (re-matcher #"mul\(\d{1,3},\d{1,3}\)")
-       (find-all-matches)
+       (re-seq #"mul\(\d{1,3},\d{1,3}\)")
        (map u/parse-out-longs)
        (map (partial apply *))
        (reduce +)))
@@ -34,8 +27,7 @@
   "Day 03 Part 2"
   [input]
   (->> input
-       (re-matcher #"(mul\(\d{1,3},\d{1,3}\)|don't\(\)|do\(\))")
-       (find-all-matches)
+       (re-seq #"(?:mul\(\d{1,3},\d{1,3}\)|don't\(\)|do\(\))")
        (process-matches)
        (map u/parse-out-longs)
        (map (partial apply *))
