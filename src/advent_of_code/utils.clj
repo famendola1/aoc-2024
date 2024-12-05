@@ -142,3 +142,13 @@
 ;; https://stackoverflow.com/questions/24553524/how-to-drop-the-nth-item-in-a-collection-in-clojure
 (defn drop-nth [n coll]
   (keep-indexed #(if (not= %1 n) %2) coll))
+
+(defn neighbors [[row col]]
+  [{:coord [(dec row) (dec col)] :dir :up-left}
+   {:coord [(dec row) col] :dir :up}
+   {:coord [(dec row) (inc col)] :dir :up-right}
+   {:coord [row (dec col)] :dir :left}
+   {:coord [row (inc col)] :dir :right}
+   {:coord [(inc row) (dec col)] :dir :down-left}
+   {:coord [(inc row) col] :dir :down}
+   {:coord [(inc row) (inc col)] :dir :down-right}])

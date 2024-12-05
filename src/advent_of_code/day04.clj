@@ -12,22 +12,11 @@
   (map #(assoc {} :coord (first %) :dir nil)
        (filter #(= (last %) letter) word-search)))
 
-(defn- neighbors [[row col]]
-  [[[(dec row) (dec col)] :up-left]
-   [[(dec row) col] :up]
-   [[(dec row) (inc col)] :up-right]
-   [[row (dec col)] :left]
-   [[row (inc col)] :right]
-   [[(inc row) (dec col)] :down-left]
-   [[(inc row) col] :down]
-   [[(inc row) (inc col)] :down-right]])
-
 (defn- get-next-letter [next-letter word-search {coord :coord
                                                  dir :dir}]
-  (map #(assoc {} :coord (first %) :dir (last %))
-       (filter #(and (or (nil? dir) (= dir (last %)))
-                     (= (word-search (first %)) next-letter))
-               (neighbors coord))))
+  (filter #(and (or (nil? dir) (= dir (:dir %)))
+                (= (word-search (:coord %)) next-letter))
+          (u/neighbors coord)))
 
 (defn- find-letter-neighbors [letter-coords next-letter word-search]
   (remove nil?
