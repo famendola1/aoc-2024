@@ -70,10 +70,15 @@
   (let [row-bound (count lab-matrix)
         col-bound (count (first lab-matrix))
         lab-map (as-map lab-matrix)]
-    (filter (partial creates-loop? lab-map row-bound col-bound)
-            (for [row (range row-bound)
-                  col (range col-bound)]
-              [row col]))))
+    (filter true?
+            (apply pcalls (pmap #(partial creates-loop? lab-map row-bound col-bound %)
+                                (for [row (range row-bound)
+                                      col (range col-bound)]
+                                  [row col]))))
+    #_(filter (partial creates-loop? lab-map row-bound col-bound)            
+              (for [row (range row-bound)
+                    col (range col-bound)]
+                [row col]))))
 
 (defn part-2
   "Day 06 Part 2"
