@@ -74,11 +74,7 @@
             (apply pcalls (pmap #(partial creates-loop? lab-map row-bound col-bound %)
                                 (for [row (range row-bound)
                                       col (range col-bound)]
-                                  [row col]))))
-    #_(filter (partial creates-loop? lab-map row-bound col-bound)            
-              (for [row (range row-bound)
-                    col (range col-bound)]
-                [row col]))))
+                                  [row col]))))))
 
 (defn part-2
   "Day 06 Part 2"
