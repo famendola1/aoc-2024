@@ -152,3 +152,8 @@
    {:coord [(inc row) (dec col)] :dir :down-left}
    {:coord [(inc row) col] :dir :down}
    {:coord [(inc row) (inc col)] :dir :down-right}])
+
+(defn out-of-bounds [row-bound col-bound]
+  (fn [[row col]]
+    (or (>= row row-bound) (< row 0)
+        (>= col col-bound) (< col 0))))
