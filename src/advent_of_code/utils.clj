@@ -162,3 +162,10 @@
 (defn debug [x]
   (pprint x)
   x)
+
+(defn matrix->map [matrix]
+  (into {}
+        (for [row (range (count matrix))
+              col (range (count (first matrix)))
+              :let [coord [row col]]]
+          [coord (get-in matrix coord)])))
