@@ -1,6 +1,7 @@
 (ns advent-of-code.utils
   (:require [clojure.string :as str]
-            [clojure.java.io :as io])
+            [clojure.java.io :as io]
+            [clojure.pprint :refer [pprint]])
   (:import (java.security MessageDigest)
            (java.math BigInteger)))
 
@@ -157,3 +158,7 @@
   (fn [[row col]]
     (or (>= row row-bound) (< row 0)
         (>= col col-bound) (< col 0))))
+
+(defn debug [x]
+  (pprint x)
+  x)
