@@ -51,32 +51,59 @@
        (map run-sum)
        (reduce +)))
 
+#_(defn- move-files [{:keys [files spaces]}]
+    (loop [files files
+           spaces spaces
+           res []]
+      (cond
+        (or (empty? spaces)
+            (empty? files)) (concat res files)
+        (zero? (:len (first spaces))) (recur files (rest spaces) res)
+        (zero? (:len (peek files))) (recur (pop files) spaces res)
+        :else
+        ;; Move files
+        (let [{f-id :id f-len :len f-idx :idx} (peek files)
+              space (first (filter #(and (>= (:len %) f-len)
+                                         (< (:idx %) f-idx))
+                                   spaces))]
+          (if-not (seq space)
+            ;; File does not fit in space, skip file
+            (recur (pop files)
+                   (remove #(> (:idx %) f-idx) spaces)
+                   (conj res (peek files)))
+            ;; File fits in space, move file
+            (recur (pop files)
+                   (cons {:id (:id space) :len (- (:len space) f-len) :idx (+ (:idx space) f-len)}
+                         (remove #(or (= (:id space) (:id %))
+                                      (> (:idx %) f-idx)) spaces))
+                   (conj res {:id f-id :len f-len :idx (:idx space)})))))))
+
 (defn- move-files [{:keys [files spaces]}]
   (loop [files files
-         spaces spaces
+         spaces (->> spaces
+                     (group-by :len)
+                     (map (fn [[len spaces]]
+                            [len (into (sorted-set-by #(compare (:idx %1) (:idx %2)))
+                                       spaces)]))
+                     (into {}))
          res []]
-    (cond
-      (or (empty? spaces)
-          (empty? files)) (concat res files)
-      (zero? (:len (first spaces))) (recur files (rest spaces) res)
-      (zero? (:len (peek files))) (recur (pop files) spaces res)
-      :else
-      ;; Move files
-      (let [{f-id :id f-len :len f-idx :idx} (peek files)
-            space (first (filter #(and (>= (:len %) f-len)
-                                       (< (:idx %) f-idx))
-                                 spaces))]
-        (if-not (seq space)
-          ;; File does not fit in space, skip file
+    (if-let [{f-id :id f-len :len f-idx :idx :as file} (peek files)]
+      (if-let [possible-lens (seq (filter #(and (seq (spaces %))
+                                                (< (:idx (first (spaces %))) f-idx))
+                                          (range f-len 10)))]
+        ;; File fits in space, move file into space
+        (let [earliest-len (apply min-key (comp :idx first spaces) possible-lens)
+              {s-idx :idx s-len :len :as space} (first (spaces earliest-len))]
           (recur (pop files)
-                 (remove #(> (:idx %) f-idx) spaces)
-                 (conj res (peek files)))
-          ;; File fits in space, move file
-          (recur (pop files)
-                 (cons {:id (:id space) :len (- (:len space) f-len) :idx (+ (:idx space) f-len)}
-                       (remove #(or (= (:id space) (:id %))
-                                    (> (:idx %) f-idx)) spaces))
-                 (conj res {:id f-id :len f-len :idx (:idx space)})))))))
+                 (assoc spaces
+                        s-len (disj (spaces s-len) space)
+                        (- s-len f-len) (conj (spaces (- s-len f-len))
+                                              {:idx (+ s-idx f-len)
+                                               :len (- s-len f-len)}))
+                 (conj res (assoc file :idx s-idx))))
+        ;; File does not fit in space, skip file
+        (recur (pop files) spaces (conj res file)))
+      res)))
 
 (defn part-2
   "Day 09 Part 2"
