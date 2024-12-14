@@ -16,9 +16,7 @@
   (apply merge-with + (map apply-rules stones)))
 
 (defn- blink [times stones]
-  (reduce (fn [changed-stones _] (blink-once changed-stones))
-          (frequencies stones)
-          (range times)))
+  (nth (iterate blink-once (frequencies stones)) times))
 
 (defn part-1
   "Day 11 Part 1"
