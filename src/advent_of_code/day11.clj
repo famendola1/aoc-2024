@@ -1,12 +1,43 @@
 (ns advent-of-code.day11
-  (:require [advent-of-code.utils :as u]))
+  (:require [advent-of-code.utils :as u]
+            [clojure.core.reducers :as r]))
+
+(defn- split-stone [digits]
+  (map (comp parse-long (partial apply str))
+       (split-at (/ (count digits) 2) digits)))
+
+(defn- apply-rules [[stone num]]
+  (let [digits (str stone)]
+    (cond (zero? stone) {1 num}
+          (even? (count digits))
+          (apply merge-with + (map #(hash-map % num) (split-stone digits)))
+          :else {(* 2024 stone) num})))
+
+(defn- blink-once [stones]
+  (apply merge-with + (map apply-rules stones)))
+
+(defn- blink [times stones]
+  (reduce (fn [changed-stones _] (blink-once changed-stones))
+          (frequencies stones)
+          (range times)))
+
+(defn- count-reducer [r-coll]
+  (r/reduce (fn [c _] (inc c)) 0 r-coll))
 
 (defn part-1
   "Day 11 Part 1"
   [input]
-  "Implement this part")
+  (->> input
+       (u/parse-out-longs)
+       (blink 25)
+       (vals)
+       (reduce +)))
 
 (defn part-2
   "Day 11 Part 2"
   [input]
-  "Implement this part")
+  (->> input
+       (u/parse-out-longs)
+       (blink 75)
+       (vals)
+       (reduce +)))
