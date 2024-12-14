@@ -154,6 +154,9 @@
    {:coord [(inc row) col] :dir :down}
    {:coord [(inc row) (inc col)] :dir :down-right}])
 
+(defn cardinal-neighbors [coord]
+  (filter #(#{:up :down :left :right} (:dir %)) (neighbors coord)))
+
 (defn out-of-bounds [row-bound col-bound]
   (fn [[row col]]
     (or (>= row row-bound) (< row 0)
