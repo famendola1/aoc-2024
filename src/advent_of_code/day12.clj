@@ -2,25 +2,6 @@
   (:require [advent-of-code.utils :as u]
             [clojure.set :as set]))
 
-(defn- parse-line [idx line]
-  (let [sections (partition-by identity line)]
-    (apply merge-with
-           merge
-           (u/debug (map #(hash-map (first %1) (hash-map [idx (first %2)] (last %2)))
-                         (u/debug sections)
-                         (reductions (fn [[idx len] s] (vector (+ len idx) (count s)))
-                                     [0 (count (first sections))]
-                                     (rest sections)))))))
-
-(defn- parse-gardens [lines]
-  (apply merge-with merge (u/debug (map-indexed parse-line lines))))
-
-(defn- compute-areas [gardens]
-  (reduce-kv (fn [m k v]
-               (assoc m k (reduce + (map last v))))
-             {}
-             gardens))
-
 (defn- count-borders [parts [[row col] len]]
   (count
    (filter
@@ -61,17 +42,12 @@
           (let [region (find-region garden p seen)]
             (recur rem-p (conj regions region) (set/union region seen))))))
 
-(defn- count-borders [region]
-  (reduce (fn [sum pos]
-            (+ sum (count
-                    (filter #(region (:coord %))
-                            (u/cardinal-neighbors pos)))))
-          0
-          region))
-
 (defn- compute-perimeter [region]
-  (- (* (count region) 4)
-     (count-borders region)))
+  (reduce +
+          (map #(- 4 (count
+                      (filter region
+                              (map :coord (u/cardinal-neighbors %)))))
+               region)))
 
 (defn- compute-price [region]
   (* (count region) (compute-perimeter region)))
@@ -85,7 +61,23 @@
        (map compute-price)
        (reduce +)))
 
+(defn- find-sides-by [f region]
+  (group-by f region))
+
+(defn- count-sides [region]
+  (prn region)
+  (let [horiz  (find-sides-by first region)
+        vert  (find-sides-by last region)])
+  0)
+
+(defn- compute-price-alt [region]
+  (* (count region) (count-sides region)))
+
 (defn part-2
   "Day 12 Part 2"
   [input]
-  )
+  (->> input
+       ((comp u/matrix->map u/to-matrix))
+       (find-regions)
+       (map compute-price-alt)
+       (reduce +)))
