@@ -1,6 +1,5 @@
 (ns advent-of-code.day11
-  (:require [advent-of-code.utils :as u]
-            [clojure.core.reducers :as r]))
+  (:require [advent-of-code.utils :as u]))
 
 (defn- split-stone [digits]
   (map (comp parse-long (partial apply str))
@@ -20,9 +19,6 @@
   (reduce (fn [changed-stones _] (blink-once changed-stones))
           (frequencies stones)
           (range times)))
-
-(defn- count-reducer [r-coll]
-  (r/reduce (fn [c _] (inc c)) 0 r-coll))
 
 (defn part-1
   "Day 11 Part 1"
