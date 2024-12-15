@@ -69,7 +69,7 @@
       1 (last (first nbrs))
       2 nil)))
 
-(defn- count-vertical-sides [region row]
+(defn- find-horizontal-sides [region row]
   (reduce (fn [res [[p-row p-col :as pos] nbrs]]
             (let [prev-pos [p-row (dec p-col)]
                   sides (if (= :none nbrs) 2 1 )]
@@ -80,10 +80,10 @@
           0
           row))
 
-(defn- find-vertical-sides [region]
+(defn- count-horizontal-sides [region]
   (let [rows (vals (group-by first region))]
     (reduce +
-            (map (partial count-vertical-sides region)
+            (map (partial find-horizontal-sides region)
                  (map (comp (partial into (sorted-map))
                             (partial keep #(when (last %) %))
                             (partial map #(vector % (count-vertical-neighbors region %))))
@@ -93,7 +93,7 @@
   (set (map #(vector (last %) (first %)) region)))
 
 (defn- count-sides [region]  
-  (+ (find-vertical-sides region) (find-vertical-sides (transpose-region region))))
+  (+ (count-horizontal-sides region) (count-horizontal-sides (transpose-region region))))
 
 (defn- compute-price-alt [region]
   (* (count region) (count-sides region)))
