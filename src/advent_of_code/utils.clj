@@ -172,3 +172,9 @@
               col (range (count (first matrix)))
               :let [coord [row col]]]
           [coord (get-in matrix coord)])))
+
+(defn dissoc-by [pred m]
+  (apply dissoc m (filter pred (keys m))))
+
+(defn dissoc-by-vals [pred m]
+  (reduce-kv (fn [m k v] (if-not (pred v) (assoc m k v) m)) {} m))
