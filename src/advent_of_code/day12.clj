@@ -61,28 +61,31 @@
        (map compute-price)
        (reduce +)))
 
-(defn- count-vertical-neighbors [region [row col]]
-  (count (filter region [[(dec row) col]
-                         [(inc row) col]])))
+(defn- count-vertical-neighbors [region [row col :as pos]]
+  (let [nbrs (filter (comp region first)
+                     [[[(dec row) col] :up] [[(inc row) col] :down]])]
+    (condp = (count nbrs)
+      0 :none
+      1 (last (first nbrs))
+      2 nil)))
 
 (defn- count-vertical-sides [region row]
-  (prn row)
   (reduce (fn [res [[p-row p-col :as pos] nbrs]]
-            (let [prev-pos [p-row (dec p-col)]]
-              (cond (nil? (row prev-pos)) (+ res (- 2 (row pos)))
-                    (= (row prev-pos) (row pos)) res
-                    (= (dec (row prev-pos)) (row pos)) (inc res)
-                    :else res)))
+            (let [prev-pos [p-row (dec p-col)]
+                  sides (if (= :none nbrs) 2 1 )]
+              (cond (nil? (row prev-pos)) (+ res sides)
+                    (= :none (row prev-pos)) res
+                    (not= (row prev-pos) nbrs) (inc res)
+                    (= (row prev-pos) (row pos)) res)))
           0
           row))
 
 (defn- find-vertical-sides [region]
-  (prn region)
   (let [rows (vals (group-by first region))]
     (reduce +
             (map (partial count-vertical-sides region)
-                 (map (comp (partial u/dissoc-by-vals #(= 2 %))
-                            (partial into (sorted-map))
+                 (map (comp (partial into (sorted-map))
+                            (partial keep #(when (last %) %))
                             (partial map #(vector % (count-vertical-neighbors region %))))
                       rows)))))
 
@@ -90,7 +93,7 @@
   (set (map #(vector (last %) (first %)) region)))
 
 (defn- count-sides [region]  
-  (u/debug (+ (u/debug (find-vertical-sides region)) (u/debug (find-vertical-sides (transpose-region region))))))
+  (+ (find-vertical-sides region) (find-vertical-sides (transpose-region region))))
 
 (defn- compute-price-alt [region]
   (* (count region) (count-sides region)))
