@@ -19,16 +19,16 @@
              :robot-pos next-pos
              :blocks (disj (conj blocks after-blocks) next-pos)))))
 
-(defn- move-robot-once [{:keys [blocks walls robot-pos] :as warehouse} move]
+(defn- move-robot-once [{:keys [blocks walls robot-pos] :as warehouse} move push-block-fn]
   (let [next-pos ((make-step-fn move) robot-pos)]
     (cond (walls next-pos) warehouse
-          (blocks next-pos) (push-block warehouse next-pos (make-step-fn move))
+          (blocks next-pos) (push-block-fn warehouse next-pos (make-step-fn move))
           :else (assoc warehouse :robot-pos next-pos))))
 
-(defn- move-robot [{:keys [blocks] :as warehouse} [move & rem]]
+(defn- move-robot [{:keys [blocks] :as warehouse} [move & rem] push-block-fn]
   (if (nil? move)
     blocks
-    (recur (move-robot-once warehouse move) rem)))
+    (recur (move-robot-once warehouse move push-block-fn) rem push-block-fn)))
 
 (defn- parse-warehouse [warehouse-str]
   (let [warehouse-matrix (u/to-matrix warehouse-str)
@@ -45,36 +45,48 @@
   (let [block-input (u/to-blocks input)
         warehouse (parse-warehouse (first block-input))
         moves (apply str (map str/trim (u/to-lines (last block-input))))]
-    (->> (move-robot warehouse moves)
+    (->> (move-robot warehouse moves push-block)
          (map #(+ (* 100 (first %)) (last %)))
          (reduce +))))
 
-(defn- expand-warehouse [[rows cols] warehouse]
-  (let [walls (for [row (range rows)
-                    col (range cols)
-                    :when (or (= 0 row) (= 0 col) (= rows row) (= cols col))]
-                [[row col] \#])
-        warehouse-walls (into {} walls)]
-    (reduce-kv (fn [m [row col] v]
-                 (let [left [row (+ col (dec col))]
-                       right [row (* 2 col)]]
-                   (condp = v
-                     \. (assoc m left v right v)
-                     \@ (assoc m left v right \.)
-                     \O (assoc m left \[ right \])
-                     \# m)))
-               warehouse-walls
-               warehouse)))
+(defn- find-blocks-to-push [blocks start-pos step-fn]
+  (loop [[q & rem] [start-pos]
+         seen #{}
+         res []]
+    (cond (not (seq q)) res
+          (or (seen q) (not (seq (blocks q)))) (recur rem seen res)
+          :else (recur (concat rem [(step-fn q) (step-fn (blocks q))])
+                       (-> seen (conj q) (conj (blocks q)))
+                       (conj res [q (blocks q)])))))
 
-(defn- expand-warehouse [{:keys [blocks walls [row col] width height]}]
+(defn- push-all-big-blocks [blocks blocks-to-push step-fn]
+  (reduce (fn [res [block-a block-b]]
+            (let [new-a (step-fn block-a)
+                  new-b (step-fn block-b)]
+              (assoc res new-a new-b new-b new-a)))
+          (apply dissoc blocks (mapcat identity blocks-to-push))
+          blocks-to-push))
+
+(defn- push-big-block [{:keys [blocks walls] :as warehouse} next-pos step-fn]
+  (let [blocks-to-push (find-blocks-to-push blocks next-pos step-fn)]
+    (if (every? (complement walls) (map step-fn (mapcat identity blocks-to-push)))
+      (assoc warehouse
+             :robot-pos next-pos
+             :blocks (push-all-big-blocks blocks blocks-to-push step-fn))
+      warehouse)))
+
+(defn- expand-block [[row col]]
+  (assoc {}
+         [row (* 2 col)] [row (inc (* 2 col))]
+         [row (inc (* 2 col))] [row (* 2 col)]))
+
+(defn- expand-warehouse [{[row col] :robot-pos :keys [blocks walls width height]}]
   {:height height
    :width (* width 2)
    :robot-pos [row (* 2 col)]
-   :blocks (set (map #(vector [row (*2 col)]
-                              [row (inc (*2 col))])
-                     blocks))
-   :walls (set (mapcat #(vector [row (*2 col)]
-                                [row (inc (*2 col))])
+   :blocks (apply merge (map expand-block blocks))
+   :walls (set (mapcat #(vector [(first %) (* 2 (last %))]
+                                [(first %) (inc (* 2 (last %)))])
                        walls))})
 
 (defn part-2
@@ -83,7 +95,9 @@
   (let [block-input (u/to-blocks input)
         warehouse (parse-warehouse (first block-input))
         moves (apply str (map str/trim (u/to-lines (last block-input))))]
-    (->> (move-robot (expand-warehouse warehouse) moves)
+    (->> (move-robot (expand-warehouse warehouse) moves push-big-block)
+         (map (partial sort-by last))
+         (distinct)
          (map first)
          (map #(+ (* 100 (first %)) (last %)))
          (reduce +))))
