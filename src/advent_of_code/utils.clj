@@ -1,7 +1,9 @@
 (ns advent-of-code.utils
   (:require [clojure.string :as str]
             [clojure.java.io :as io]
-            [clojure.pprint :refer [pprint]])
+            [clojure.set :as set]
+            [clojure.pprint :refer [pprint]]
+            [clojure.data.priority-map :refer [priority-map-keyfn]])
   (:import (java.security MessageDigest)
            (java.math BigInteger)))
 
@@ -178,3 +180,39 @@
 
 (defn dissoc-by-vals [pred m]
   (reduce-kv (fn [m k v] (if-not (pred v) (assoc m k v) m)) {} m))
+
+(defn- merge-costs [[curr-cost curr-prevs :as curr] [new-cost new-prevs :as new]]
+  (cond (= curr-cost new-cost) [curr-cost (set/union curr-prevs new-prevs)]
+        (< new-cost curr-cost) new
+        :else curr))
+
+(def ^:private invert-dir
+  {:left :right
+   :up :down
+   :right :left
+   :down :up})
+
+(defn dijkstra-matrix
+  "Dijkstra's algorithm for finding the minimum path between two positions in
+  a matrix. Positions consist of a coordinate and a direction.
+  
+  - start: the start position [coordinate, direction]
+  - target: the target coordinate. This does not include the direction.
+  - nbrs-fn: a function that takes a position and returns a map of positions and
+  the cost of travelling to that position."
+  [start target nbrs-fn]  
+  (loop [q (priority-map-keyfn first start [0 #{}])
+         res {}]
+    (let [[[coord :as pos] [cost :as cost-and-prevs]] (peek q)]
+      (if (= coord target)
+        (assoc res pos cost-and-prevs coord cost)
+        (let [new-costs (->> (nbrs-fn pos)
+                             ;; skip nodes we've visited
+                             (dissoc-by #(res  %))
+                             ;; don't go backwards
+                             (dissoc-by #(res [(first %) (invert-dir (last %))]))
+                             (#(update-vals % (partial + cost))))]
+          (recur (merge-with merge-costs
+                             (pop q)
+                             (update-vals new-costs #(vector % (set [pos]))))
+                 (assoc res pos cost-and-prevs)))))))
