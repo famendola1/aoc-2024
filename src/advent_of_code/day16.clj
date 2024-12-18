@@ -24,9 +24,9 @@
         walls (set (keep #(when (= \# (last %)) (first %)) maze))
         start (some #(when (= \S (last %)) (first %)) maze)
         target (some #(when (= \E (last %)) (first %)) maze)
-        graph (u/dijkstra-matrix [start :right]
-                                 target
-                                 (partial get-neighbors walls))]
+        graph (u/dijkstra [start :right]
+                          target
+                          (partial get-neighbors walls))]
     (ffirst (keep #(when (= target (ffirst %)) (last %)) graph))))
 
 (defn- find-nodes-on-all-paths [graph start target]
@@ -45,8 +45,9 @@
         start (some #(when (= \S (last %)) (first %)) maze)
         target (some #(when (= \E (last %)) (first %)) maze)
         graph (u/dijkstra-matrix [start :right]
-                                 target
-                                 (partial get-neighbors walls))]
+                                 [target :right]
+                                 (partial get-neighbors walls)
+                                 :alt-targets #{[target :left] [target :up] [target :down]})]
     (->> (find-nodes-on-all-paths graph target start)
          (map first)
          (set)

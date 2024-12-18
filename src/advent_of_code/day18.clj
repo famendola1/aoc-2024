@@ -5,11 +5,12 @@
 (def NUM_BYTES 1024)
 (def is-out-of-bounds? (u/out-of-bounds (inc (first TARGET)) (inc (last TARGET))))
 
-(defn- get-neighbors-dijkstra [bytes [coord dir]]
-  (apply merge (map #(assoc {} (vec (vals %))  1)
-                    (remove #(or (is-out-of-bounds? (:coord %))
-                                 (bytes (:coord %)))
-                            (u/cardinal-neighbors coord)))))
+(defn- get-neighbors-dijkstra [bytes coord]
+  (apply merge (map #(assoc {} %  1)
+                    (keep #(when-not (or (is-out-of-bounds? (:coord %))
+                                         (bytes (:coord %)))
+                             (:coord %))
+                          (u/cardinal-neighbors coord)))))
 
 (defn part-1
   "Day 18 Part 1"
@@ -19,7 +20,7 @@
                    (take NUM_BYTES)
                    (map (comp vec reverse u/parse-out-longs))
                    (set))
-        graph(u/dijkstra-matrix [[0 0] :right] TARGET (partial get-neighbors-dijkstra bytes) :transform-fn first)]
+        graph (u/dijkstra [0 0] TARGET (partial get-neighbors-dijkstra bytes))]
     (first (graph TARGET))))
 
 (defn- get-neighbors-dfs [bytes coord]

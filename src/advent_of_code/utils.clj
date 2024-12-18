@@ -194,7 +194,7 @@
    :right :left
    :down :up})
 
-(defn dijkstra-matrix
+(defn dijkstra
   "Dijkstra's algorithm for finding the minimum path between two positions in
   a matrix. Positions consist of a coordinate and a direction.
   
@@ -202,24 +202,26 @@
   - target: the target coordinate. This does not include the direction.
   - nbrs-fn: a function that takes a position and returns a map of positions and
   the cost of travelling to that position.
-  - transform-fn: transform a position to another unique identifer. For example,
-  using first as the transform-fn will ignore direction."  
-  [start target nbrs-fn & {:keys [transform-fn] :or {transform-fn identity}}]  
+  - alt-targets: specifies alternate nodes that are also targets. This is
+  useful when node have an associated state that don't matter for the target.
+  For example, if you're doing this search on a matrix where the direction
+  you're travelling in is important."  
+  [start target nbrs-fn & {:keys [alt-targets] :or {alt-targets #{}}}]  
   (loop [q (priority-map-keyfn first start [0 #{}])
          res {}]
-    (let [[[coord :as pos] [cost :as cost-and-prevs]] (peek q)]
+    (let [[node [cost :as cost-and-prevs]] (peek q)]
       (cond (not (seq q)) res
-            (= coord target)
-            (assoc res (transform-fn pos) cost-and-prevs)
+            (or (= node target) (alt-targets node))
+            (assoc res node cost-and-prevs)
             :else
-            (let [new-costs (->> (nbrs-fn pos)
+            (let [new-costs (->> (nbrs-fn node)
                                  ;; skip nodes we've visited
-                                 (dissoc-by #(res (transform-fn %)))
+                                 (dissoc-by #(res %))
                                  (#(update-vals % (partial + cost))))]
               (recur (merge-with merge-costs
                                  (pop q)
-                                 (update-vals new-costs #(vector % (set [(transform-fn pos)]))))
-                     (assoc res (transform-fn pos) cost-and-prevs)))))))
+                                 (update-vals new-costs #(vector % (set [node]))))
+                     (assoc res node cost-and-prevs)))))))
 
 (defn dfs
   "Depth First Search Algorithm
