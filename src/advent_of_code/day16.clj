@@ -27,7 +27,7 @@
         graph (u/dijkstra-matrix [start :right]
                                  target
                                  (partial get-neighbors walls))]
-    (graph target)))
+    (ffirst (keep #(when (= target (ffirst %)) (last %)) graph))))
 
 (defn- find-nodes-on-all-paths [graph start target]
   (loop [[pos & rem] (map first (filter #(= start (ffirst %)) graph))

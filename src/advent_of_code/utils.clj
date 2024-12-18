@@ -164,7 +164,9 @@
     (or (>= row row-bound) (< row 0)
         (>= col col-bound) (< col 0))))
 
-(defn debug [x]
+(defn debug [x & msgs]
+  (when msgs
+    (apply println msgs))
   (pprint x)
   x)
 
@@ -199,20 +201,40 @@
   - start: the start position [coordinate, direction]
   - target: the target coordinate. This does not include the direction.
   - nbrs-fn: a function that takes a position and returns a map of positions and
-  the cost of travelling to that position."
-  [start target nbrs-fn]  
+  the cost of travelling to that position.
+  - transform-fn: transform a position to another unique identifer. For example,
+  using first as the transform-fn will ignore direction."  
+  [start target nbrs-fn & {:keys [transform-fn] :or {transform-fn identity}}]  
   (loop [q (priority-map-keyfn first start [0 #{}])
          res {}]
     (let [[[coord :as pos] [cost :as cost-and-prevs]] (peek q)]
-      (if (= coord target)
-        (assoc res pos cost-and-prevs coord cost)
-        (let [new-costs (->> (nbrs-fn pos)
-                             ;; skip nodes we've visited
-                             (dissoc-by #(res  %))
-                             ;; don't go backwards
-                             (dissoc-by #(res [(first %) (invert-dir (last %))]))
-                             (#(update-vals % (partial + cost))))]
-          (recur (merge-with merge-costs
-                             (pop q)
-                             (update-vals new-costs #(vector % (set [pos]))))
-                 (assoc res pos cost-and-prevs)))))))
+      (cond (not (seq q)) res
+            (= coord target)
+            (assoc res (transform-fn pos) cost-and-prevs)
+            :else
+            (let [new-costs (->> (nbrs-fn pos)
+                                 ;; skip nodes we've visited
+                                 (dissoc-by #(res (transform-fn %)))
+                                 (#(update-vals % (partial + cost))))]
+              (recur (merge-with merge-costs
+                                 (pop q)
+                                 (update-vals new-costs #(vector % (set [(transform-fn pos)]))))
+                     (assoc res (transform-fn pos) cost-and-prevs)))))))
+
+(defn dfs
+  "Depth First Search Algorithm
+  - start: the start node
+  - target: the target node
+  - nbrs-fn: a functions that takes a node and returns a list of its neighboring
+  nodes."
+  [start target nbrs-fn]  
+  (loop [q [[start (set nil)]]
+         res {}]
+    (let [[curr path] (peek q)]
+      (cond (nil? curr) res
+            (= curr target) (assoc res target (conj path target))
+            (res curr) (recur (pop q) res)
+            :else (recur (vec (concat (pop q)
+                                      (map #(vector % (conj path curr))
+                                           (nbrs-fn curr))))
+                         (assoc res curr (conj path curr)))))))
