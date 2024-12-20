@@ -188,12 +188,6 @@
         (< new-cost curr-cost) new
         :else curr))
 
-(def ^:private invert-dir
-  {:left :right
-   :up :down
-   :right :left
-   :down :up})
-
 (defn dijkstra
   "Dijkstra's algorithm for finding the minimum path between two positions in
   a matrix. Positions consist of a coordinate and a direction.
@@ -225,6 +219,8 @@
 
 (defn dfs
   "Depth First Search Algorithm
+  Returns a map of nodes with a set containing all the nodes in the path to that
+  node.
   - start: the start node
   - target: the target node
   - nbrs-fn: a functions that takes a node and returns a list of its neighboring
@@ -240,3 +236,45 @@
                                       (map #(vector % (conj path curr))
                                            (nbrs-fn curr))))
                          (assoc res curr (conj path curr)))))))
+
+#_(defn dfs-all-paths
+    
+    [start target nbrs-fn]
+    (loop [q [[start (set nil)]]         
+           res []]
+      (let [[curr path] (peek q)]
+        (cond (nil? curr) res
+              (= curr target) (recur (pop q) (conj res (conj path target)))
+              :else (recur (vec (concat (pop q)
+                                        (map #(vector % (conj path curr))
+                                             (nbrs-fn curr))))
+                           res)))))
+
+(defn- merge-all-paths [all-paths path]  
+  (merge-with conj
+              all-paths
+              (into {} (map #(vector %1 [%2])
+                            (butlast path)
+                            (take-while #(seq %)
+                                        (iterate (comp vec rest) path))))))
+
+(defn dfs-all-paths
+  "Depth First Search Algorithm to find all paths from start to target.
+  Returns a list of paths start to target. DOES NOT HANDLE LOOPS.
+  - start: the start node
+  - target: the target node
+  - nbrs-fn: a functions that takes a node and returns a list of its neighboring
+  nodes."
+  [start target nbrs-fn]
+  (loop [q [[start []]]         
+         res {target [[target]]}]
+    (let [[curr path] (peek q)]
+      (cond (nil? curr) (res start)
+            (res curr) (recur (pop q)
+                              (reduce merge-all-paths res
+                                      (map (partial concat path)
+                                           (res curr))))
+            :else (recur (vec (concat (pop q)
+                                      (map #(vector % (conj path (vec curr)))
+                                           (nbrs-fn curr))))
+                         res)))))
