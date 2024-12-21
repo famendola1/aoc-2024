@@ -219,14 +219,13 @@
 
 (defn dfs
   "Depth First Search Algorithm
-  Returns a map of nodes with a set containing all the nodes in the path to that
-  node.
+  Returns a map of nodes with a path to that node from start.
   - start: the start node
   - target: the target node
   - nbrs-fn: a functions that takes a node and returns a list of its neighboring
   nodes."
   [start target nbrs-fn]  
-  (loop [q [[start (set nil)]]
+  (loop [q [[start []]]
          res {}]
     (let [[curr path] (peek q)]
       (cond (nil? curr) res
@@ -236,19 +235,6 @@
                                       (map #(vector % (conj path curr))
                                            (nbrs-fn curr))))
                          (assoc res curr (conj path curr)))))))
-
-#_(defn dfs-all-paths
-    
-    [start target nbrs-fn]
-    (loop [q [[start (set nil)]]         
-           res []]
-      (let [[curr path] (peek q)]
-        (cond (nil? curr) res
-              (= curr target) (recur (pop q) (conj res (conj path target)))
-              :else (recur (vec (concat (pop q)
-                                        (map #(vector % (conj path curr))
-                                             (nbrs-fn curr))))
-                           res)))))
 
 (defn- merge-all-paths [all-paths path]  
   (merge-with conj
