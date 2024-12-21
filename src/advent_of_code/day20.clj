@@ -16,13 +16,9 @@
                                     (= height (dec row)) (= width (dec col)))]
                       [row col]))}))
 
-(defn- get-neighbors [walls coord]
-  (remove #(walls %)
-          (map :coord (u/cardinal-neighbors coord))))
-
 (defn- time-race [start end walls]
   (let [path ((u/dfs start end (partial get-neighbors walls)) end)]
-    (into {} (map vector path (reverse (range 0 (count path)))))))
+    (zipmap path (reverse (range (count path))))))
 
 (defn- manhattan-coords [pred dist [row col :as coord]]
   (for [m-row (take (inc (* dist 2)) (iterate inc (- row dist)))
