@@ -69,9 +69,23 @@
           code
           (range (inc robots))))
 
+(def expand-path
+  (memoize
+   (fn [robots curr next]
+     (let [presses (get-in key-presses [curr next])]
+       (if (zero? robots)
+         presses
+         (apply str
+                (mapcat #(apply expand-path (dec robots) %)
+                        (partition 2 1 (str "A" presses)))))))))
+
+(defn- press-door-code-alt [robots code]
+  (apply str (mapcat #(apply expand-path robots %)
+                     (partition 2 1 (str "A" code)))))
+
 (defn- complexity [robots code]
   (let [num (first (u/parse-out-longs code))]
-    (* num (count (press-door-code robots code)))))
+    (* num (count (press-door-code-alt robots code)))))
 
 (defn part-1
   "Day 21 Part 1"
@@ -80,12 +94,6 @@
        (u/to-lines)
        (map (partial complexity 2))
        (apply +)))
-
-(def press-key-pad-memo
-  (memoize
-   (fn [keys]
-     (mapcat #(seq (get-in key-presses %))
-             (partition 2 1 (cons \A keys))))))
 
 (defn part-2
   "Day 21 Part 2"
